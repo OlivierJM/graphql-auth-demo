@@ -92,6 +92,7 @@ const server = new ApolloServer({
   resolvers,
   // you can catch all the request in the context
   context: async ({ req }) => {
+    // when querying, pass a header with the login token as authentication to authenticate
     const token = await req.headers["authentication"];
     let user;
     try {
