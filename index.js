@@ -4,8 +4,10 @@ const { ApolloServer, gql } = require("apollo-server");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
+const pick = require("lodash").pick;
 // Construct a schema, using GraphQL schema language
 
+// configure the user collection
 const userSchema = mongoose.Schema({
   email: String,
   password: String
@@ -13,6 +15,16 @@ const userSchema = mongoose.Schema({
 
 const User = mongoose.model("User", userSchema);
 
+mongoose.Promise = global.Promise;
+// connect to mongodb here
+mongoose.connect(
+  `mongodb://${process.env.USER}:${
+    process.env.PASS
+  }@ds261716.mlab.com:61716/user-test`,
+  { useNewUrlParser: true }
+);
+
+// define user schema for GraphQL
 const typeDefs = gql`
   type Query {
     user: User
@@ -46,11 +58,11 @@ const resolvers = {
     },
     login: async (root, args, context) => {
       // we will generate a token for the user here
-      const user = await User.findOne({ email: context.email });
+      const user = await User.findOne({ email: args.email });
       if (!user) {
         throw new Error("No user found ");
       }
-      const isValid = await bcrypt.compare(context.password, user.password);
+      const isValid = await bcrypt.compare(args.password, user.password);
       if (!isValid) {
         throw new Error("Incorrect password ");
       }
