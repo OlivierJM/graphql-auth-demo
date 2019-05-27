@@ -1,6 +1,4 @@
-// import { ApolloServer, gql } from "apollo-server";
-// import jwt from "jsonwebtoken";
-const { ApolloServer, gql } = require("apollo-server");
+const { ApolloServer, gql, AuthenticationError } = require("apollo-server");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
@@ -25,7 +23,8 @@ mongoose.connect(
 // Construct a schema, using GraphQL schema language
 const typeDefs = gql`
   type Query {
-    user: User
+    loggedInUser: User
+    users: [User]
   }
   type Mutation {
     register(email: String, password: String): User!
@@ -41,8 +40,15 @@ const SECRET = "createaverystrongsecretthatalsoincludes2423412wdsa324e34e";
 // Provide resolver functions for your schema fields
 const resolvers = {
   Query: {
-    user(root, args, context) {
-      return context.user;
+    // you can get the details of the logged-in user
+    loggedInUser(root, args, { user }) {
+      return user;
+    },
+    users(root, args, { user }) {
+      if (!user) {
+        throw new Error("You are not logged in to access this information ");
+      }
+      return User.find({});
     }
   },
   Mutation: {
@@ -86,16 +92,15 @@ const server = new ApolloServer({
   // you can catch all the request in the context
   context: async ({ req }) => {
     const token = await req.headers["authentication"];
-    let user;
+    let verifiedResponse;
     try {
-      user = await jwt.verify(token, SECRET);
-      console.log(`${user.user} user`);
+      verifiedResponse = await jwt.verify(token, SECRET);
     } catch (error) {
       console.log(`${error.message} caught`);
     }
     // the user and secret we are passing here is what we access in every resolver
     return {
-      user,
+      user: verifiedResponse,
       SECRET
     };
   }
