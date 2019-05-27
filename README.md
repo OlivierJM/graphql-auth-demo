@@ -19,6 +19,39 @@ Created with CodeSandbox, the article that properly explains this is here https:
 
 Althought this example uses mongoose and MongoDb, you can easily set up any other database.
 
+**Mutations**
+
+```graphql
+mutation {
+  register(email:"olivier@gmail.com", password:"compl8353pass"){
+    email
+    password
+  }
+}
+```
+
+```graphql
+mutation {
+  login(email:"olivier@gmail.com", password:"compl8353pass")
+}
+```
+
+**Queries**
+
+```graphql
+{
+  users {
+    email
+    password
+  }
+  loggedInUser {
+    email
+  }
+}
+
+```
+
+
 **To-do**
 
 - Use a different database (relational)
