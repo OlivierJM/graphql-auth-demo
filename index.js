@@ -5,18 +5,16 @@ const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const pick = require("lodash").pick;
-// Construct a schema, using GraphQL schema language
 
 // configure the user collection
 const userSchema = mongoose.Schema({
   email: String,
   password: String
 });
-
 const User = mongoose.model("User", userSchema);
 
-mongoose.Promise = global.Promise;
 // connect to mongodb here
+mongoose.Promise = global.Promise;
 mongoose.connect(
   `mongodb://${process.env.USER}:${
     process.env.PASS
@@ -24,7 +22,7 @@ mongoose.connect(
   { useNewUrlParser: true }
 );
 
-// define user schema for GraphQL
+// Construct a schema, using GraphQL schema language
 const typeDefs = gql`
   type Query {
     user: User
@@ -50,54 +48,54 @@ const resolvers = {
   Mutation: {
     register: async (root, args) => {
       const user = User();
+      // we will get the email and password from the args object
       user.email = args.email;
       user.password = await bcrypt.hash(args.password, 12);
-      // we will get the email and password from the args object
-      // console.log(args);
+      // save the user to the db
       return user.save();
     },
     login: async (root, args, context) => {
-      // we will generate a token for the user here
+      // check if the user exists
       const user = await User.findOne({ email: args.email });
       if (!user) {
         throw new Error("No user found ");
       }
+      // check if the password matches the hashed one we already have
       const isValid = await bcrypt.compare(args.password, user.password);
       if (!isValid) {
         throw new Error("Incorrect password ");
       }
       //   sign in the user
+      // if the user exist then create a token for them
       const token = await jwt.sign(
         {
           user: pick(user, ["_id", "email"])
         },
         SECRET,
-        // this token will last for a year, this should be adjusted accordingly
-        { expiresIn: "1y" }
+        // this token will last for a day, but you can change it
+        // check the jsonwebtoken for more on this
+        { expiresIn: "1d" }
       );
       return token;
-      console.log(args);
-      return context.token;
     }
   }
 };
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  // you can catch all the request in the context
   context: async ({ req }) => {
     const token = await req.headers["authentication"];
     let user;
     try {
       user = await jwt.verify(token, SECRET);
       console.log(`${user.user} user`);
-      // user = await jwt.verify(token, SECRET);
-      // console.log(`${user.user} user`);
     } catch (error) {
       console.log(`${error.message} caught`);
     }
     // the user and secret we are passing here is what we access in every resolver
     return {
-      user: await user,
+      user,
       SECRET
     };
   }
