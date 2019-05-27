@@ -1,4 +1,4 @@
-const { ApolloServer, gql, AuthenticationError } = require("apollo-server");
+const { ApolloServer, gql } = require("apollo-server");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
@@ -56,11 +56,11 @@ const resolvers = {
       const user = User();
       // we will get the email and password from the args object
       user.email = args.email;
-      user.password = await bcrypt.hash(args.password, 12);
+      user.password = await bcrypt.hash(args.password, 12); // encrypt the password before saving it
       // save the user to the db
       return user.save();
     },
-    login: async (root, args, context) => {
+    login: async (root, args) => {
       // check if the user exists
       const user = await User.findOne({ email: args.email });
       if (!user) {
@@ -82,6 +82,7 @@ const resolvers = {
         // check the jsonwebtoken for more on this
         { expiresIn: "1d" }
       );
+      // as indicated in the typeDefs we return a token when a user successfully logs in
       return token;
     }
   }
@@ -91,16 +92,17 @@ const server = new ApolloServer({
   resolvers,
   // you can catch all the request in the context
   context: async ({ req }) => {
+    // when querying, pass a header with the login token as authentication to authenticate
     const token = await req.headers["authentication"];
-    let verifiedResponse;
+    let user;
     try {
-      verifiedResponse = await jwt.verify(token, SECRET);
+      user = await jwt.verify(token, SECRET);
     } catch (error) {
       console.log(`${error.message} caught`);
     }
     // the user and secret we are passing here is what we access in every resolver
     return {
-      user: verifiedResponse,
+      user,
       SECRET
     };
   }
