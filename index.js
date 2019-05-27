@@ -1,5 +1,3 @@
-// import { ApolloServer, gql } from "apollo-server";
-// import jwt from "jsonwebtoken";
 const { ApolloServer, gql } = require("apollo-server");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
@@ -25,7 +23,8 @@ mongoose.connect(
 // Construct a schema, using GraphQL schema language
 const typeDefs = gql`
   type Query {
-    user: User
+    loggedInUser: User
+    users: [User]
   }
   type Mutation {
     register(email: String, password: String): User!
@@ -41,8 +40,15 @@ const SECRET = "createaverystrongsecretthatalsoincludes2423412wdsa324e34e";
 // Provide resolver functions for your schema fields
 const resolvers = {
   Query: {
-    user(root, args, context) {
-      return context.user;
+    // you can get the details of the logged-in user
+    loggedInUser(root, args, { user }) {
+      return user;
+    },
+    users(root, args, { user }) {
+      if (!user) {
+        throw new Error("You are not logged in to access this information ");
+      }
+      return User.find({});
     }
   },
   Mutation: {
@@ -50,11 +56,11 @@ const resolvers = {
       const user = User();
       // we will get the email and password from the args object
       user.email = args.email;
-      user.password = await bcrypt.hash(args.password, 12);
+      user.password = await bcrypt.hash(args.password, 12); // encrypt the password before saving it
       // save the user to the db
       return user.save();
     },
-    login: async (root, args, context) => {
+    login: async (root, args) => {
       // check if the user exists
       const user = await User.findOne({ email: args.email });
       if (!user) {
@@ -76,6 +82,7 @@ const resolvers = {
         // check the jsonwebtoken for more on this
         { expiresIn: "1d" }
       );
+      // as indicated in the typeDefs we return a token when a user successfully logs in
       return token;
     }
   }
@@ -89,7 +96,6 @@ const server = new ApolloServer({
     let user;
     try {
       user = await jwt.verify(token, SECRET);
-      console.log(`${user.user} user`);
     } catch (error) {
       console.log(`${error.message} caught`);
     }
