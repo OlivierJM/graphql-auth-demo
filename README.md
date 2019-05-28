@@ -1,6 +1,6 @@
 # graphql-auth-demo
 
-Created with CodeSandbox, the article that properly explains this is here https://medium.com/p/7f92e8120027
+Created with CodeSandbox, the article that properly explains this is [here](https://medium.com/developer-circles-lusaka/https-medium-com-olivierjm-auth-graphql-7f92e8120027) 
 
 > This was created to demonstrate authentication in GraphQL.
 
