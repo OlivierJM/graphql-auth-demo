@@ -8,7 +8,7 @@
     "graphql": "14.0.2",
     "jsonwebtoken": "8.5.1",
     "lodash": "4.17.11",
-    "mongoose": "5.5.11"
+    "mongoose": "5.7.5"
   },
   "license": "MIT",
   "main": "index.js",
